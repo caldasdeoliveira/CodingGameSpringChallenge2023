@@ -23,6 +23,10 @@ class Cell(object):
         self.opp_ants = opp_ants
 
 
+##################################################################
+## Helper functions
+
+
 def find_nearest_resources_and_distance(base, cells):
     visited = set()
     queue = [(base, 0)]
@@ -37,8 +41,30 @@ def find_nearest_resources_and_distance(base, cells):
     return None, None
 
 
+def distance(start: Cell, end: Cell, cells):
+    visited = set()
+    queue = [(start, 0)]
+    while len(queue) > 0:
+        cell, distance = queue.pop(0)
+        if cell.index == end.index:
+            return distance
+        visited.add(cell.index)
+        for neighbor in cell.neighbors:
+            if neighbor not in visited:
+                queue.append((cells[neighbor], distance + 1))
+    return None
+
+
+def find_highest_resources_over_distance(base, cells):
+    candidates = []
+    for cell in cells:
+        if cell.resources > 0:
+            candidates.append((cell, distance(base, cell, cells)))
+    return max(candidates, key=lambda x: x[0].resources / x[1])
+
+
 def total_ants(cells):
-    return sum([cell.my_ants + cell.opp_ants for cell in cells])
+    return sum([cell.my_ants for cell in cells])
 
 
 ##################################################################
@@ -98,7 +124,7 @@ while True:
 
     # TODO: choose actions to perform and push them into actions
     for base in my_bases:
-        cell, distance = find_nearest_resources_and_distance(cells[base], cells)
+        cell, distance = find_highest_resources_over_distance(base, cells)
         if cell is not None:
             actions.append(
                 f"LINE {base} {cell.index} {min(cell.resources ,total_ants(cells) // distance)}"
