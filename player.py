@@ -81,11 +81,14 @@ def best_resource_path(base: Cell, cells: List[Cell]) -> List[Tuple[Cell, int]]:
                         "cell": cells[neighbor],
                         "previous": current["cell"],
                         "distance": current["distance"] + 1,
-                        "value": current["value"] + cells[neighbor].resources - 1,
+                        "value": current["value"] + cells[neighbor].resources,
                     }
                 )
 
-        queue.sort(key=lambda cell: cell["value"], reverse=True)
+        queue.sort(
+            key=lambda cell: cell["value"],
+            reverse=True,
+        )
     return visited
 
 
@@ -147,7 +150,7 @@ while True:
     # TODO: choose actions to perform and push them into actions
     for base in my_bases:
         visited = best_resource_path(cells[base], cells)
-        max_value = max(visited, key=lambda cell: cell["value"])
+        max_value = max(visited, key=lambda cell: cell["value"] / cell["distance"])
         strength = get_my_number_ants(cells) // max_value["distance"]
 
         while True:
