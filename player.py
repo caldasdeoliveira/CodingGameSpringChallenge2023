@@ -41,6 +41,20 @@ def get_my_number_ants(cells: List[Cell]) -> List[Cell]:
 
 
 def best_resource_path(base: Cell, cells: List[Cell]) -> List[Tuple[Cell, int]]:
+    """
+    Returns the best path to a resource. The best path is the one that has the most resources on the way.
+    It is calculated by going through all the cells and calculating the value of each cell.
+    The value is calculated by adding the resources of the cell to the value of the previous cell.
+    The value of the base cell is 0.
+
+
+    Args:
+        base (Cell): The base cell
+        cells (List[Cell]): The list of all cells
+
+    Returns:
+        List[Tuple[Cell, int]]: The list of cells to go through to get to the resource
+    """
     visited: List[
         Dict[Cell, Cell, int, int]
     ] = []  # [{"cell": cell, "previous": cell, "distance": distance, "value": value}]
