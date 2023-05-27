@@ -1,8 +1,11 @@
+from typing import List, Tuple, Dict
+
+
 class Cell(object):
     index: int
     cell_type: int
     resources: int
-    neighbors: list[int]
+    neighbors: List[int]
     my_ants: int
     opp_ants: int
 
@@ -11,7 +14,7 @@ class Cell(object):
         index: int,
         cell_type: int,
         resources: int,
-        neighbors: list[int],
+        neighbors: List[int],
         my_ants: int,
         opp_ants: int,
     ):
@@ -22,54 +25,59 @@ class Cell(object):
         self.my_ants = my_ants
         self.opp_ants = opp_ants
 
+    def __str__(self):
+        return f"Cell(index={self.index}, cell_type={self.cell_type}, resources={self.resources}, neighbors={self.neighbors}, my_ants={self.my_ants}, opp_ants={self.opp_ants})"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 ##################################################################
 ## Helper functions
 
 
-def find_nearest_resources_and_distance(base, cells):
-    visited = set()
-    queue = [(base, 0)]
+def get_my_number_ants(cells: List[Cell]) -> List[Cell]:
+    return sum(map(lambda cell: cell.my_ants, cells))
+
+
+def best_resource_path(base: Cell, cells: List[Cell]) -> List[Tuple[Cell, int]]:
+    visited: List[
+        Dict[Cell, Cell, int, int]
+    ] = []  # [{"cell": cell, "previous": cell, "distance": distance, "value": value}]
+    queue: List[Dict[Cell, Cell, int, int]] = [
+        {"cell": base, "previous": None, "distance": 1, "value": 0}
+    ]
+
     while len(queue) > 0:
-        cell, distance = queue.pop(0)
-        if cell.resources > 0:
-            return cell, distance
-        visited.add(cell.index)
-        for neighbor in cell.neighbors:
-            if neighbor not in visited:
-                queue.append((cells[neighbor], distance + 1))
-    return None, None
+        current = queue.pop(0)
 
+        if visited:
+            if current["cell"].index in [v["cell"].index for v in visited]:
+                continue
 
-def distance(start: Cell, end: Cell, cells):
-    visited = set()
-    queue = [(start, 0)]
-    while len(queue) > 0:
-        cell, distance = queue.pop(0)
-        if cell.index == end.index:
-            return distance
-        visited.add(cell.index)
-        for neighbor in cell.neighbors:
-            if neighbor not in visited:
-                queue.append((cells[neighbor], distance + 1))
-    return None
+        visited.append(current)
 
+        if current["distance"] < get_my_number_ants(cells):
+            for neighbor in current["cell"].neighbors:
+                if visited:
+                    if cells[neighbor].index in [v["cell"].index for v in visited]:
+                        continue
+                queue.append(
+                    {
+                        "cell": cells[neighbor],
+                        "previous": current["cell"],
+                        "distance": current["distance"] + 1,
+                        "value": current["value"] + cells[neighbor].resources - 1,
+                    }
+                )
 
-def find_highest_resources_over_distance(base, cells):
-    candidates = []
-    for cell in cells:
-        if cell.resources > 0:
-            candidates.append((cell, distance(base, cell, cells)))
-    return max(candidates, key=lambda x: x[0].resources / x[1])
-
-
-def total_ants(cells):
-    return sum([cell.my_ants for cell in cells])
+        queue.sort(key=lambda cell: cell["value"], reverse=True)
+    return visited
 
 
 ##################################################################
 ## Load Initalization inputs
-cells: list[Cell] = []
+cells: List[Cell] = []
 
 number_of_cells = int(input())  # amount of hexagonal cells in this map
 for i in range(number_of_cells):
@@ -97,11 +105,11 @@ for i in range(number_of_cells):
     )
     cells.append(cell)
 number_of_bases = int(input())
-my_bases: list[int] = []
+my_bases: List[int] = []
 for i in input().split():
     my_base_index = int(i)
     my_bases.append(my_base_index)
-opp_bases: list[int] = []
+opp_bases: List[int] = []
 for i in input().split():
     opp_base_index = int(i)
     opp_bases.append(opp_base_index)
@@ -124,11 +132,17 @@ while True:
 
     # TODO: choose actions to perform and push them into actions
     for base in my_bases:
-        cell, distance = find_highest_resources_over_distance(base, cells)
-        if cell is not None:
-            actions.append(
-                f"LINE {base} {cell.index} {min(cell.resources ,total_ants(cells) // distance)}"
-            )
+        visited = best_resource_path(cells[base], cells)
+        max_value = max(visited, key=lambda cell: cell["value"])
+        strength = get_my_number_ants(cells) // max_value["distance"]
+
+        while True:
+            actions.append(f"BEACON {max_value['cell'].index} {strength}")
+            if max_value["previous"] is None:
+                break
+            max_value = visited[
+                [v["cell"].index for v in visited].index(max_value["previous"].index)
+            ]
 
     # To debug: print("Debug messages...", file=sys.stderr, flush=True)
     if len(actions) == 0:
